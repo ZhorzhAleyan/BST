@@ -1,0 +1,228 @@
+#include <iostream>
+
+struct Node {
+    int value;
+    Node* parent;
+    Node* right;
+    Node* left;
+    Node(int value)
+            : value(value), left(nullptr), right(nullptr), parent(nullptr) {}
+};
+
+class BST {
+private:
+    Node* root;
+
+public:
+    BST() {
+        this->root = nullptr;
+    }
+
+    ~BST(){
+        destroy(root);
+    }
+
+    Node* getRoot() {
+        return root;
+    }
+
+    Node* search(int value, Node* node) {
+        if (node == nullptr || node->value == value)
+            return node;
+        if (value < node->value)
+            return search(value, node->left);
+        else
+            return search(value, node->right);
+    }
+
+    Node* treeMinimum(Node* node){
+        if (node == nullptr) return nullptr;
+
+        while(node->left != nullptr)
+        {
+            node = node->left;
+        }
+        return node;
+    }
+
+    Node* treeMaximum(Node* node){
+        if (node == nullptr) return nullptr;
+
+        while(node->right != nullptr)
+        {
+            node = node->right;
+        }
+        return node;
+    }
+
+    Node* treeSuccessor(Node* node){
+        if (node->right != nullptr) {
+            return treeMinimum(node->right);
+        }
+
+        Node* y = node->parent;
+        while (y != nullptr && node == y->right) {
+            node = y;
+            y = y->parent;
+        }
+        return y;
+    }
+
+
+
+    void updateTree(Node* node, int total, int& local_sum) {
+        if (!node) return;
+
+        updateTree(node->left, total, local_sum);
+        local_sum += node->value;
+        node->value += total - local_sum;
+        updateTree(node->right, total, local_sum);
+    }
+
+    int sumSubtree(Node* node){
+        if(!node) return 0;
+        return node->value + sumSubtree(node->left) + sumSubtree(node->right);
+    }
+
+    int countNodesSubtree(Node* node){
+        if(!node) return 0;
+        return 1 + countNodesSubtree(node->left) + countNodesSubtree(node->right);
+    }
+
+    int countingOFNodesAverageSubtree(Node* node){
+        if (!node) return 0;
+        int count = 0;
+        int count_Nodes = countNodesSubtree(node);
+        int sumSubtree1 = sumSubtree(node);
+        if(node->value == sumSubtree1 / count_Nodes)
+            count++;
+        count += countingOFNodesAverageSubtree(node->left);
+        count += countingOFNodesAverageSubtree(node->right);
+        return count;
+    }
+
+    void insert(int value) {
+        Node* y = nullptr;
+        Node* x = root;
+        Node* z = new Node(value);
+
+        while (x!= nullptr) {
+            y = x;
+            if (z->value < x->value) {
+                x = x->left;
+            }
+            else {
+                x = x->right;
+            }
+        }
+
+        z->parent = y;
+
+        if (y == nullptr) {
+            root = z;
+        }
+        else if (z->value < y->value) {
+            y->left = z;
+        }
+        else {
+            y->right = z;
+        }
+    }
+
+    Node* Transplant(Node* u, Node* v){
+        if (u->parent == nullptr) {
+            root = v;
+        }
+        else if (u == u->parent->left) {
+            u->parent->left = v;
+        }
+        else if (u == u->parent->right) {
+            u->parent->right = v;
+        }
+
+        if (v != nullptr) {
+            v->parent = u->parent;
+        }
+        return root;
+    }
+
+    Node* deleteNode(Node* z){
+        if(z == nullptr) {
+            return root;
+        }
+        else if (z->left == nullptr) {
+            root = Transplant(z, z->right);
+        }
+        else if (z->right == nullptr) {
+            root = Transplant(z, z->left);
+        }
+        else {
+            Node *y = treeMinimum(z->right);
+            if (y->parent != z) {
+                root = Transplant(y, y->right);
+                y->right = z->right;
+                y->right->parent = y;
+            }
+            root = Transplant(z, y);
+            y->left = z->left;
+            y->left->parent = y;
+        }
+        delete z;
+        return root;
+    }
+
+    void inorder(Node* node) {
+        if (node == nullptr) return;
+
+        inorder(node->left);
+        std::cout << node->value << " ";
+        inorder(node->right);
+    }
+
+    void preorder(Node* node){
+        if (!node) return;
+
+        std::cout << node->value << " ";
+        preorder(node->left);
+        preorder(node->right);
+    }
+
+    void postorder(Node* node){
+        if (!node) return;
+
+        postorder(node->left);
+        postorder(node->right);
+        std::cout << node->value << " ";
+    }
+
+    void destroy(Node* node){
+        if (!node) return;
+
+        destroy(node->right);
+        destroy(node->left);
+        delete node;
+    }
+};
+
+int main(){
+    BST tree;
+
+    tree.insert(50);
+    tree.insert(30);
+    tree.insert(70);
+    tree.insert(20);
+    tree.insert(40);
+    tree.insert(60);
+    tree.insert(80);
+
+    std::cout << "Inorder: ";
+    tree.inorder(tree.getRoot());
+    std::cout << std::endl;
+
+    Node* node = tree.search(50, tree.getRoot());
+    tree.deleteNode(node);
+
+    std::cout << "After deleting 50: ";
+    tree.inorder(tree.getRoot());
+    return 0;
+}
